@@ -22,24 +22,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Do not use cache: npm until package-lock.json is committed — without a lockfile
+      # setup-node often fails fast with "Dependencies lock file is not found".
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
+          node-version: "20"
 
-      - name: Install and build
+      - name: Compute Vite base path
+        id: vite_base
+        shell: bash
         run: |
-          npm install
+          set -euo pipefail
           REPO_NAME="${{ github.event.repository.name }}"
           OWNER="${{ github.repository_owner }}"
           if [ "$REPO_NAME" = "${OWNER}.github.io" ]; then
-            export VITE_BASE_PATH="/"
-            echo "User site → VITE_BASE_PATH=/"
+            echo "path=/" >> "$GITHUB_OUTPUT"
+            echo "User pages site → VITE_BASE_PATH=/"
           else
-            export VITE_BASE_PATH="/${REPO_NAME}/"
-            echo "Project site → VITE_BASE_PATH=/${REPO_NAME}/"
+            echo "path=/${REPO_NAME}/" >> "$GITHUB_OUTPUT"
+            echo "Project pages site → VITE_BASE_PATH=/${REPO_NAME}/"
           fi
-          npm run build
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        env:
+          VITE_BASE_PATH: ${{ steps.vite_base.outputs.path }}
+        run: npm run build
+
+      - name: List build output
+        run: ls -la dist
 
       - uses: actions/configure-pages@v5
 
