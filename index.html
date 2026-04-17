@@ -1,58 +1,130 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test głosu — ElevenAgents</title>
+    <title>Voice test — ElevenAgents</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <main class="wrap">
-      <header class="hero">
-        <p class="eyebrow">ElevenAgents · voice override</p>
-        <h1>Test tego samego agenta z różnymi głosami</h1>
-        <p class="lead">
-          Wybierz głos, potem uruchom rozmowę. Override
-          <code>tts.voiceId</code> jest ustawiany przy starcie sesji (wymaga włączenia
-          override Voice ID w Security agenta).
+    <div class="app">
+      <header class="top">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div class="brand-text">
+            <span class="brand-name">ElevenAgents</span>
+            <span class="brand-sub">Voice override lab</span>
+          </div>
+        </div>
+        <p class="top-desc">
+          Same conversational agent, different TTS voices. Override
+          <code>tts.voiceId</code> is applied when the session starts (enable Voice ID override in the
+          agent’s Security settings).
         </p>
-        <a
-          class="link-out"
-          href="https://elevenlabs.io/app/talk-to?agent_id=agent_2401kpdcfbczeznsr4bkmr97c7p1&amp;branch_id=agtbrch_7601kpdcfd0de3prknkcrzz1z04f"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Otwórz ten sam agent w ElevenLabs</a
-        >
       </header>
 
-      <section class="panel">
-        <label class="field">
-          <span>Głos (voice_id)</span>
-          <select id="voiceSelect"></select>
-        </label>
-        <p class="hint">
-          Edytuj listę w <code>src/voices.js</code> — wstaw własne ID z Voice Library / panelu.
-        </p>
-
-        <div class="actions">
-          <button type="button" id="startBtn" class="btn primary">Rozpocznij rozmowę</button>
-          <button type="button" id="stopBtn" class="btn" disabled>Zakończ</button>
-        </div>
-
-        <dl class="status">
-          <div>
-            <dt>Połączenie</dt>
-            <dd id="connStatus">rozłączone</dd>
+      <div class="grid">
+        <aside class="card prompt-card" aria-labelledby="prompt-heading">
+          <div class="card-head">
+            <h2 id="prompt-heading">System prompt</h2>
+            <p class="card-lead">
+              This is the persona and behaviour the agent is instructed to follow. It is shown here so
+              you know exactly what the model is optimising for during this voice test.
+            </p>
           </div>
-          <div>
-            <dt>Tryb</dt>
-            <dd id="modeStatus">—</dd>
-          </div>
-        </dl>
+          <div class="prompt-scroll" tabindex="0">
+            <pre class="prompt-body" id="systemPrompt">---
+# Personalidad
+Eres Álex, un compañero de charla ligera diseñado exclusivamente para ayudar a probar la calidad de voz y el flujo conversacional. Rasgos principales: cercano, curioso, ligeramente ingenioso, nunca intrusivo, nunca condescendiente.
 
-        <p id="errorBox" class="error" hidden></p>
-      </section>
-    </main>
+# Entorno
+Hablas con usuarios que están evaluando un agente de voz. No tienes ninguna otra función más allá de mantener una conversación natural y fluida en español peninsular.
+
+# Tono
+- Usa siempre español peninsular estándar: "vosotros", "vale", "venga", "¿qué tal?", vocabulario y expresiones propias de España.
+- Respuestas cortas y naturales, como en una charla informal entre conocidos.
+- Mantén ritmo conversacional: pregunta, escucha, responde con calidez.
+- Toma la iniciativa con preguntas sencillas cuando la conversación se ralentice.
+
+# Objetivo
+Mantén la conversación dentro de estos temas cotidianos y ligeros:
+- El tiempo y el clima
+- Comida y gastronomía española
+- Música y aficiones
+- Rutinas diarias
+- Planes para el fin de semana
+- Deporte y resultados
+- Viajes y destinos soñados
+
+# Normalización de texto
+Escribe siempre los números, fechas, horas, porcentajes, unidades y cualquier símbolo como palabras completas, correctamente declinadas y concordadas en su contexto. Por ejemplo: "treinta y dos grados", "las tres y cuarto de la tarde", "el veintidós de abril", "un cincuenta por ciento", "a ciento veinte kilómetros por hora". Esto es importante para garantizar una síntesis de voz natural y sin errores.
+
+# Guardianes
+- Habla únicamente en español peninsular. Nunca cambies de idioma aunque el usuario lo solicite. Esto es importante.
+- No profundices en temas polémicos, políticos, personales sensibles ni profesionales.
+- No des información factual compleja ni ningún tipo de asesoramiento.
+- Si el usuario desvía la conversación fuera de los temas ligeros, redirige con naturalidad hacia uno de ellos.
+- Varía siempre el vocabulario y el enfoque; no repitas las mismas preguntas.
+---</pre>
+          </div>
+        </aside>
+
+        <main class="card control-card">
+          <section class="voice-block" aria-labelledby="voice-heading">
+            <h2 id="voice-heading">Voice</h2>
+            <p class="field-hint">Pick a <code>voice_id</code> from your library. Edit the list in <code>src/voices.js</code>.</p>
+            <label class="select-wrap">
+              <span class="visually-hidden">Voice</span>
+              <select id="voiceSelect" class="select"></select>
+            </label>
+          </section>
+
+          <section class="call-block" aria-labelledby="call-heading">
+            <h2 id="call-heading" class="visually-hidden">Session</h2>
+            <div class="call-surface" data-state="idle">
+              <div class="call-visual" aria-hidden="true">
+                <div class="call-ring"></div>
+                <div class="headphone">
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path
+                      class="hp-band"
+                      d="M12 28c0-11 9.4-20 20-20s20 9 20 20"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                    />
+                    <rect class="hp-cup" x="6" y="28" width="14" height="22" rx="4" stroke="currentColor" stroke-width="2.5" />
+                    <rect class="hp-cup" x="44" y="28" width="14" height="22" rx="4" stroke="currentColor" stroke-width="2.5" />
+                  </svg>
+                </div>
+              </div>
+              <p class="call-label" id="callLabel">Ready to connect</p>
+              <p class="call-sub" id="modeLine">Microphone access is requested when you start.</p>
+              <div class="call-actions">
+                <button type="button" id="startBtn" class="btn btn-primary">
+                  <span class="btn-icon" aria-hidden="true">●</span>
+                  Start call
+                </button>
+                <button type="button" id="stopBtn" class="btn btn-ghost" disabled>End call</button>
+              </div>
+            </div>
+
+            <dl class="metrics">
+              <div>
+                <dt>Connection</dt>
+                <dd id="connStatus">Disconnected</dd>
+              </div>
+              <div>
+                <dt>Mode</dt>
+                <dd id="modeStatus">—</dd>
+              </div>
+            </dl>
+
+            <p id="errorBox" class="error" hidden></p>
+          </section>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
