@@ -50,9 +50,14 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      # Optional repo Variables (Settings → Secrets and variables → Actions → Variables):
+      #   VITE_USE_BROWSER_TOKEN = true
+      #   VITE_BRANCH_ID = agtbrch_...   (branch z linku talk-to; puste = bez branch w tokenie)
       - name: Build
         env:
           VITE_BASE_PATH: ${{ steps.vite_base.outputs.path }}
+          VITE_USE_BROWSER_TOKEN: ${{ vars.VITE_USE_BROWSER_TOKEN }}
+          VITE_BRANCH_ID: ${{ vars.VITE_BRANCH_ID }}
         run: npm run build
 
       - name: Verify build is bundled (not raw /src/)
