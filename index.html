@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice test — ElevenAgents</title>
-    <meta name="theme-color" content="#08080a" />
+    <meta name="theme-color" content="#f4f4f5" />
   </head>
   <body>
     <div class="app">
@@ -13,14 +13,9 @@
           <span class="brand-mark" aria-hidden="true"></span>
           <div class="brand-text">
             <span class="brand-name">ElevenAgents</span>
-            <span class="brand-sub">Voice override lab</span>
+            <span class="brand-sub">Peninsular Spanish</span>
           </div>
         </div>
-        <p class="top-desc">
-          Same conversational agent, different TTS voices. Override
-          <code>tts.voiceId</code> is applied when the session starts (enable Voice ID override in the
-          agent’s Security settings).
-        </p>
       </header>
 
       <div class="grid">
@@ -72,7 +67,10 @@ Escribe siempre los números, fechas, horas, porcentajes, unidades y cualquier s
         <main class="card control-card">
           <section class="voice-block" aria-labelledby="voice-heading">
             <h2 id="voice-heading">Voice</h2>
-            <p class="field-hint">Pick a <code>voice_id</code> from your library. Edit the list in <code>src/voices.js</code>.</p>
+            <p class="field-hint">
+              Pick the voice the agent speaks with before you connect. To switch voices, end the call first —
+              it can’t be changed during a session.
+            </p>
             <label class="select-wrap">
               <span class="visually-hidden">Voice</span>
               <select id="voiceSelect" class="select"></select>
