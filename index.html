@@ -27,15 +27,16 @@
 
       <div class="grid">
         <aside class="card prompt-card" aria-labelledby="prompt-heading">
-          <div class="card-head">
-            <h2 id="prompt-heading">System prompt</h2>
-            <p class="card-lead">
-              This is the persona and behaviour the agent is instructed to follow. It is shown here so
-              you know exactly what the model is optimising for during this voice test.
-            </p>
-          </div>
-          <div class="prompt-scroll" tabindex="0">
-            <pre class="prompt-body" id="systemPrompt"># Personalidad
+          <div class="card-column-body">
+            <div class="card-head">
+              <h2 id="prompt-heading">System prompt</h2>
+              <p class="card-lead">
+                This is the persona and behaviour the agent is instructed to follow. It is shown here so
+                you know exactly what the model is optimising for during this voice test.
+              </p>
+            </div>
+            <div class="prompt-scroll" tabindex="0">
+              <pre class="prompt-body" id="systemPrompt"># Personalidad
 Eres Álex, un compañero de charla ligera diseñado exclusivamente para ayudar a probar la calidad de voz y el flujo conversacional. Rasgos principales: cercano, curioso, ligeramente ingenioso, nunca intrusivo, nunca condescendiente.
 
 # Entorno
@@ -67,24 +68,26 @@ Escribe siempre los números, fechas, horas, porcentajes, unidades y cualquier s
 - Si el usuario desvía la conversación fuera de los temas ligeros, redirige con naturalidad hacia uno de ellos.
 - Varía siempre el vocabulario y el enfoque; no repitas las mismas preguntas.
 </pre>
+            </div>
           </div>
-          <p class="prompt-llm card-model-foot" aria-label="LLM: GPT-4o">LLM: GPT-4o</p>
+          <p class="card-model-foot" aria-label="LLM: GPT-4o">LLM: GPT-4o</p>
         </aside>
 
         <main class="card control-card">
-          <section class="voice-block" aria-labelledby="voice-heading">
-            <h2 id="voice-heading">Voice</h2>
-            <p class="field-hint">
-              Pick the voice the agent speaks with before you connect. To switch voices, end the call first —
-              it can’t be changed during a session.
-            </p>
-            <label class="select-wrap">
-              <span class="visually-hidden">Voice</span>
-              <select id="voiceSelect" class="select"></select>
-            </label>
-          </section>
+          <div class="card-column-body">
+            <section class="voice-block" aria-labelledby="voice-heading">
+              <h2 id="voice-heading">Voice</h2>
+              <p class="field-hint">
+                Pick the voice the agent speaks with before you connect. To switch voices, end the call first —
+                it can’t be changed during a session.
+              </p>
+              <label class="select-wrap">
+                <span class="visually-hidden">Voice</span>
+                <select id="voiceSelect" class="select"></select>
+              </label>
+            </section>
 
-          <section class="call-block" aria-labelledby="call-heading">
+            <section class="call-block" aria-labelledby="call-heading">
             <h2 id="call-heading" class="visually-hidden">Session</h2>
             <div class="call-surface" data-state="idle">
               <div class="call-visual" aria-hidden="true">
@@ -125,12 +128,10 @@ Escribe siempre los números, fechas, horas, porcentajes, unidades y cualquier s
               </div>
             </dl>
 
-            <p id="errorBox" class="error" hidden></p>
-          </section>
-
-          <p class="prompt-llm card-model-foot" aria-label="ElevenLabs TTS model: eleven_flash_v2_5">
-            eleven_flash_v2_5
-          </p>
+              <p id="errorBox" class="error" hidden></p>
+            </section>
+          </div>
+          <p class="card-model-foot" aria-label="ElevenLabs TTS model: eleven_flash_v2_5">eleven_flash_v2_5</p>
         </main>
       </div>
     </div>
