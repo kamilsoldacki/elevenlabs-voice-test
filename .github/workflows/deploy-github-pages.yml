@@ -1,4 +1,8 @@
 # After enabling GitHub Pages (Settings → Pages → Source: GitHub Actions), push to the default branch (e.g. main).
+#
+# CRITICAL: In Settings → Pages → "Build and deployment", Source must be "GitHub Actions".
+# If Source is "Deploy from a branch" (e.g. main / (root)), GitHub serves raw repo files.
+# Then index.html still points at /src/main.js and npm imports cannot run — the site looks broken.
 
 name: Deploy static site to Pages
 
@@ -50,6 +54,15 @@ jobs:
         env:
           VITE_BASE_PATH: ${{ steps.vite_base.outputs.path }}
         run: npm run build
+
+      - name: Verify build is bundled (not raw /src/)
+        run: |
+          set -euo pipefail
+          if grep -q '/src/main.js' dist/index.html; then
+            echo "::error::dist/index.html still references /src/main.js — not a Vite production build."
+            exit 1
+          fi
+          echo "OK: production entry in dist/index.html"
 
       - name: List build output
         run: ls -la dist
