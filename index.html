@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test głosu — ElevenAgents</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <p class="eyebrow">ElevenAgents · voice override</p>
+        <h1>Test tego samego agenta z różnymi głosami</h1>
+        <p class="lead">
+          Wybierz głos, potem uruchom rozmowę. Override
+          <code>tts.voiceId</code> jest ustawiany przy starcie sesji (wymaga włączenia
+          override Voice ID w Security agenta).
+        </p>
+        <a
+          class="link-out"
+          href="https://elevenlabs.io/app/talk-to?agent_id=agent_2401kpdcfbczeznsr4bkmr97c7p1&amp;branch_id=agtbrch_7601kpdcfd0de3prknkcrzz1z04f"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Otwórz ten sam agent w ElevenLabs</a
+        >
+      </header>
+
+      <section class="panel">
+        <label class="field">
+          <span>Głos (voice_id)</span>
+          <select id="voiceSelect"></select>
+        </label>
+        <p class="hint">
+          Edytuj listę w <code>src/voices.js</code> — wstaw własne ID z Voice Library / panelu.
+        </p>
+
+        <div class="actions">
+          <button type="button" id="startBtn" class="btn primary">Rozpocznij rozmowę</button>
+          <button type="button" id="stopBtn" class="btn" disabled>Zakończ</button>
+        </div>
+
+        <dl class="status">
+          <div>
+            <dt>Połączenie</dt>
+            <dd id="connStatus">rozłączone</dd>
+          </div>
+          <div>
+            <dt>Tryb</dt>
+            <dd id="modeStatus">—</dd>
+          </div>
+        </dl>
+
+        <p id="errorBox" class="error" hidden></p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
