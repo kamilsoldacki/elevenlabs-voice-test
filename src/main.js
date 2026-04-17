@@ -3,6 +3,12 @@ import { VOICES } from "./voices.js";
 import "./styles.css";
 
 const AGENT_ID = "agent_2401kpdcfbczeznsr4bkmr97c7p1";
+/** Same branch as in the ElevenLabs talk-to URL; SDK’s agentId-only path omits this. */
+const BRANCH_ID =
+  import.meta.env.VITE_BRANCH_ID ?? "agtbrch_7601kpdcfd0de3prknkcrzz1z04f";
+/** Query params for GET /v1/convai/conversation/token — keep version in sync with @elevenlabs/client. */
+const CONVAI_TOKEN_SOURCE = "js_sdk";
+const CONVAI_TOKEN_VERSION = "1.2.1";
 
 const voiceSelect = document.getElementById("voiceSelect");
 const startBtn = document.getElementById("startBtn");
@@ -33,6 +39,23 @@ function showError(msg) {
   errorBox.textContent = msg;
 }
 
+function parseTokenResponse(text, httpStatus) {
+  if (!text) {
+    throw new Error(`Token HTTP ${httpStatus}`);
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(text.slice(0, 200) || `Token HTTP ${httpStatus}`);
+  }
+  if (!data.token) {
+    throw new Error("API response is missing the token field");
+  }
+  return data.token;
+}
+
+/** Dev only: token via local proxy (can use XI_API_KEY / .env on server). */
 async function fetchConversationToken() {
   const res = await fetch("/api/token");
   const text = await res.text();
@@ -46,11 +69,35 @@ async function fetchConversationToken() {
     }
     throw new Error(detail || `Token HTTP ${res.status}`);
   }
-  const data = JSON.parse(text);
-  if (!data.token) {
-    throw new Error("API response is missing the token field");
+  return parseTokenResponse(text, res.status);
+}
+
+/**
+ * Browser fetch to ElevenLabs (CORS open for this endpoint) with branch_id,
+ * matching the talk-to URL behaviour. Required when the agent branch differs from default.
+ */
+async function fetchConversationTokenDirect() {
+  const url = new URL("https://api.elevenlabs.io/v1/convai/conversation/token");
+  url.searchParams.set("agent_id", AGENT_ID);
+  if (BRANCH_ID) {
+    url.searchParams.set("branch_id", BRANCH_ID);
   }
-  return data.token;
+  url.searchParams.set("source", CONVAI_TOKEN_SOURCE);
+  url.searchParams.set("version", CONVAI_TOKEN_VERSION);
+
+  const res = await fetch(url.toString());
+  const text = await res.text();
+  if (!res.ok) {
+    let detail = text;
+    try {
+      const j = JSON.parse(text);
+      detail = j.detail?.map((d) => d.msg).join("; ") || JSON.stringify(j);
+    } catch {
+      /* raw text */
+    }
+    throw new Error(detail || `Token HTTP ${res.status}`);
+  }
+  return parseTokenResponse(text, res.status);
 }
 
 function setCallUi(state) {
@@ -79,11 +126,13 @@ async function startConversation() {
 
     const voiceId = voiceSelect.value;
 
-    // Dev: token from small server (branch_id from .env). Static hosting: public agentId only.
-    const sessionAuth =
-      import.meta.env.DEV && import.meta.env.VITE_DEV_USE_TOKEN_SERVER !== "false"
-        ? { conversationToken: await fetchConversationToken() }
-        : { agentId: AGENT_ID };
+    // Dev: optional local token server. Otherwise: browser token fetch with branch_id (same as talk-to link).
+    const useLocalTokenServer =
+      import.meta.env.DEV && import.meta.env.VITE_DEV_USE_TOKEN_SERVER !== "false";
+    const conversationToken = useLocalTokenServer
+      ? await fetchConversationToken()
+      : await fetchConversationTokenDirect();
+    const sessionAuth = { conversationToken };
 
     conversation = await Conversation.startSession({
       ...sessionAuth,
