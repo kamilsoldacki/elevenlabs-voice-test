@@ -1,5 +1,6 @@
 import { Conversation } from "@elevenlabs/client";
 import { VOICES } from "./voices.js";
+import "./styles.css";
 
 const AGENT_ID = "agent_2401kpdcfbczeznsr4bkmr97c7p1";
 
