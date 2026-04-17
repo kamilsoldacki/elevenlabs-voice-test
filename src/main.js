@@ -3,10 +3,9 @@ import { VOICES } from "./voices.js";
 import "./styles.css";
 
 const AGENT_ID = "agent_2401kpdcfbczeznsr4bkmr97c7p1";
-/** Same branch as in the ElevenLabs talk-to URL; SDK’s agentId-only path omits this. */
-const BRANCH_ID =
-  import.meta.env.VITE_BRANCH_ID ?? "agtbrch_7601kpdcfd0de3prknkcrzz1z04f";
-/** Query params for GET /v1/convai/conversation/token — keep version in sync with @elevenlabs/client. */
+
+/** Used only when VITE_USE_BROWSER_TOKEN=true (token + optional branch in browser). */
+const BRANCH_ID = import.meta.env.VITE_BRANCH_ID ?? "";
 const CONVAI_TOKEN_SOURCE = "js_sdk";
 const CONVAI_TOKEN_VERSION = "1.2.1";
 
@@ -55,8 +54,8 @@ function parseTokenResponse(text, httpStatus) {
   return data.token;
 }
 
-/** Dev only: token via local proxy (can use XI_API_KEY / .env on server). */
-async function fetchConversationToken() {
+/** Dev: token via Vite proxy → local server (XI_API_KEY / branch in .env). */
+async function fetchConversationTokenFromDevServer() {
   const res = await fetch("/api/token");
   const text = await res.text();
   if (!res.ok) {
@@ -72,11 +71,8 @@ async function fetchConversationToken() {
   return parseTokenResponse(text, res.status);
 }
 
-/**
- * Browser fetch to ElevenLabs (CORS open for this endpoint) with branch_id,
- * matching the talk-to URL behaviour. Required when the agent branch differs from default.
- */
-async function fetchConversationTokenDirect() {
+/** Optional: browser token (e.g. branch_id). Off by default — same as pjatk GAIA page (agentId only). */
+async function fetchConversationTokenFromBrowser() {
   const url = new URL("https://api.elevenlabs.io/v1/convai/conversation/token");
   url.searchParams.set("agent_id", AGENT_ID);
   if (BRANCH_ID) {
@@ -98,6 +94,25 @@ async function fetchConversationTokenDirect() {
     throw new Error(detail || `Token HTTP ${res.status}`);
   }
   return parseTokenResponse(text, res.status);
+}
+
+/**
+ * Same idea as https://kamilsoldacki.github.io/pjatk-march_workshops-2026/ — agentId + SDK token fetch inside WebRTC.
+ * Opt-in: dev token server, VITE_USE_BROWSER_TOKEN, or VITE_USE_WEBSOCKET.
+ */
+async function buildSessionAuth() {
+  const useLocalTokenServer =
+    import.meta.env.DEV && import.meta.env.VITE_DEV_USE_TOKEN_SERVER !== "false";
+  if (useLocalTokenServer) {
+    return { conversationToken: await fetchConversationTokenFromDevServer() };
+  }
+  if (import.meta.env.VITE_USE_BROWSER_TOKEN === "true") {
+    return { conversationToken: await fetchConversationTokenFromBrowser() };
+  }
+  if (import.meta.env.VITE_USE_WEBSOCKET === "true") {
+    return { agentId: AGENT_ID, connectionType: "websocket" };
+  }
+  return { agentId: AGENT_ID };
 }
 
 function setCallUi(state) {
@@ -122,25 +137,18 @@ async function startConversation() {
   setCallUi("connecting");
 
   try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-
     const voiceId = voiceSelect.value;
+    const overrides = {
+      tts: {
+        voiceId,
+      },
+    };
 
-    // Dev: optional local token server. Otherwise: browser token fetch with branch_id (same as talk-to link).
-    const useLocalTokenServer =
-      import.meta.env.DEV && import.meta.env.VITE_DEV_USE_TOKEN_SERVER !== "false";
-    const conversationToken = useLocalTokenServer
-      ? await fetchConversationToken()
-      : await fetchConversationTokenDirect();
-    const sessionAuth = { conversationToken };
+    const sessionAuth = await buildSessionAuth();
 
     conversation = await Conversation.startSession({
       ...sessionAuth,
-      overrides: {
-        tts: {
-          voiceId,
-        },
-      },
+      overrides,
       onConnect: () => {
         connStatus.textContent = "Connected";
         stopBtn.disabled = false;
