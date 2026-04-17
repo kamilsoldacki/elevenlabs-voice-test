@@ -189,6 +189,10 @@ body {
   letter-spacing: 0.02em;
 }
 
+.control-card > .control-model-meta {
+  margin-top: auto;
+}
+
 .control-card {
   padding: 1.4rem 1.4rem 1.45rem;
   display: flex;
