@@ -50,13 +50,11 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      # Optional repo Variables (Settings → Secrets and variables → Actions → Variables):
-      #   VITE_USE_BROWSER_TOKEN = true
-      #   VITE_BRANCH_ID = agtbrch_...   (branch z linku talk-to; puste = bez branch w tokenie)
+      # Optional Variables: VITE_PAGES_FORCE_WEBRTC, VITE_BRANCH_ID, VITE_USE_WEBSOCKET, …
       - name: Build
         env:
           VITE_BASE_PATH: ${{ steps.vite_base.outputs.path }}
-          VITE_USE_BROWSER_TOKEN: ${{ vars.VITE_USE_BROWSER_TOKEN }}
+          VITE_PAGES_FORCE_WEBRTC: ${{ vars.VITE_PAGES_FORCE_WEBRTC }}
           VITE_BRANCH_ID: ${{ vars.VITE_BRANCH_ID }}
         run: npm run build
 

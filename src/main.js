@@ -3,9 +3,11 @@ import { VOICES } from "./voices.js";
 import "./styles.css";
 
 const AGENT_ID = "agent_2401kpdcfbczeznsr4bkmr97c7p1";
+const BRANCH_ID =
+  import.meta.env.VITE_BRANCH_ID === "false"
+    ? ""
+    : (import.meta.env.VITE_BRANCH_ID ?? "agtbrch_7601kpdcfd0de3prknkcrzz1z04f");
 
-/** Used only when VITE_USE_BROWSER_TOKEN=true (token + optional branch in browser). */
-const BRANCH_ID = import.meta.env.VITE_BRANCH_ID ?? "";
 const CONVAI_TOKEN_SOURCE = "js_sdk";
 const CONVAI_TOKEN_VERSION = "1.2.1";
 
@@ -54,7 +56,6 @@ function parseTokenResponse(text, httpStatus) {
   return data.token;
 }
 
-/** Dev: token via Vite proxy → local server (XI_API_KEY / branch in .env). */
 async function fetchConversationTokenFromDevServer() {
   const res = await fetch("/api/token");
   const text = await res.text();
@@ -71,7 +72,6 @@ async function fetchConversationTokenFromDevServer() {
   return parseTokenResponse(text, res.status);
 }
 
-/** Optional: browser token (e.g. branch_id). Off by default — same as pjatk GAIA page (agentId only). */
 async function fetchConversationTokenFromBrowser() {
   const url = new URL("https://api.elevenlabs.io/v1/convai/conversation/token");
   url.searchParams.set("agent_id", AGENT_ID);
@@ -96,23 +96,39 @@ async function fetchConversationTokenFromBrowser() {
   return parseTokenResponse(text, res.status);
 }
 
-/**
- * Same idea as https://kamilsoldacki.github.io/pjatk-march_workshops-2026/ — agentId + SDK token fetch inside WebRTC.
- * Opt-in: dev token server, VITE_USE_BROWSER_TOKEN, or VITE_USE_WEBSOCKET.
- */
-async function buildSessionAuth() {
-  const useLocalTokenServer =
-    import.meta.env.DEV && import.meta.env.VITE_DEV_USE_TOKEN_SERVER !== "false";
-  if (useLocalTokenServer) {
-    return { conversationToken: await fetchConversationTokenFromDevServer() };
-  }
-  if (import.meta.env.VITE_USE_BROWSER_TOKEN === "true") {
-    return { conversationToken: await fetchConversationTokenFromBrowser() };
-  }
-  if (import.meta.env.VITE_USE_WEBSOCKET === "true") {
-    return { agentId: AGENT_ID, connectionType: "websocket" };
-  }
-  return { agentId: AGENT_ID };
+function isGitHubPagesHost() {
+  return typeof location !== "undefined" && /\.github\.io$/i.test(location.hostname);
+}
+
+function buildCallbacks() {
+  return {
+    onConnect: () => {
+      connStatus.textContent = "Connected";
+      stopBtn.disabled = false;
+      voiceSelect.disabled = true;
+      setCallUi("active");
+    },
+    onDisconnect: () => {
+      connStatus.textContent = "Disconnected";
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      modeStatus.textContent = "—";
+      voiceSelect.disabled = false;
+      conversation = null;
+      setCallUi("idle");
+    },
+    onError: (err) => {
+      console.error(err);
+      showError(typeof err === "string" ? err : err?.message || String(err));
+    },
+    onModeChange: ({ mode }) => {
+      modeStatus.textContent = mode === "speaking" ? "Speaking" : "Listening";
+      if (callSurface?.dataset.state === "active" && modeLine) {
+        modeLine.textContent =
+          mode === "speaking" ? "Agent is speaking — wait for your turn." : "Listening — go ahead and talk.";
+      }
+    },
+  };
 }
 
 function setCallUi(state) {
@@ -138,43 +154,57 @@ async function startConversation() {
 
   try {
     const voiceId = voiceSelect.value;
-    const overrides = {
-      tts: {
-        voiceId,
-      },
-    };
+    const overrides = { tts: { voiceId } };
+    const callbacks = buildCallbacks();
 
-    const sessionAuth = await buildSessionAuth();
+    const useLocalTokenServer =
+      import.meta.env.DEV && import.meta.env.VITE_DEV_USE_TOKEN_SERVER !== "false";
+    if (useLocalTokenServer) {
+      const conversationToken = await fetchConversationTokenFromDevServer();
+      conversation = await Conversation.startSession({
+        conversationToken,
+        overrides,
+        ...callbacks,
+      });
+      return;
+    }
 
+    if (import.meta.env.VITE_USE_WEBSOCKET === "true") {
+      conversation = await Conversation.startSession({
+        agentId: AGENT_ID,
+        connectionType: "websocket",
+        overrides,
+        ...callbacks,
+      });
+      return;
+    }
+
+    if (import.meta.env.VITE_USE_AGENT_ID_ONLY === "true") {
+      conversation = await Conversation.startSession({
+        agentId: AGENT_ID,
+        overrides,
+        ...callbacks,
+      });
+      return;
+    }
+
+    // GitHub Pages: same transport as pjatk workshop pages (WebSocket + agentId) — WebRTC often dies here.
+    // Optional: VITE_PAGES_FORCE_WEBRTC=true in build to use token+branch+WebRTC on github.io anyway.
+    if (isGitHubPagesHost() && import.meta.env.VITE_PAGES_FORCE_WEBRTC !== "true") {
+      conversation = await Conversation.startSession({
+        agentId: AGENT_ID,
+        connectionType: "websocket",
+        overrides,
+        ...callbacks,
+      });
+      return;
+    }
+
+    const conversationToken = await fetchConversationTokenFromBrowser();
     conversation = await Conversation.startSession({
-      ...sessionAuth,
+      conversationToken,
       overrides,
-      onConnect: () => {
-        connStatus.textContent = "Connected";
-        stopBtn.disabled = false;
-        voiceSelect.disabled = true;
-        setCallUi("active");
-      },
-      onDisconnect: () => {
-        connStatus.textContent = "Disconnected";
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        modeStatus.textContent = "—";
-        voiceSelect.disabled = false;
-        conversation = null;
-        setCallUi("idle");
-      },
-      onError: (err) => {
-        console.error(err);
-        showError(typeof err === "string" ? err : err?.message || String(err));
-      },
-      onModeChange: ({ mode }) => {
-        modeStatus.textContent = mode === "speaking" ? "Speaking" : "Listening";
-        if (callSurface?.dataset.state === "active" && modeLine) {
-          modeLine.textContent =
-            mode === "speaking" ? "Agent is speaking — wait for your turn." : "Listening — go ahead and talk.";
-        }
-      },
+      ...callbacks,
     });
   } catch (e) {
     console.error(e);
